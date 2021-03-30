@@ -10,53 +10,64 @@ import (
 )
 
 func Test_MethodEncodeDecode(t *testing.T) {
-	for c, exp := range map[string]int{
-		"":           0,
-		"Hello, 世界！": 16,
+	for _, c := range []string{
+		"",
+		"Hello, 世界！",
 	} {
 		src := []byte(c)
-		dst := StdEncoding.Encode(src)
+		enc := make([]byte, len(src)*2)
+		n1 := StdEncoding.Encode(enc, src)
 
 		got := make([]byte, len(src)*2)
-		n, err := StdEncoding.Decode(got, dst)
+		n2, err := StdEncoding.Decode(got, enc[:n1])
 		if err != nil {
 			t.Fatalf("%s failed decode, err = %v", c, err)
 		}
-		if n != exp {
-			t.Fatalf("%s failed decode, got = %d, want = %d", c, n, exp)
+		if n2 != len(src) {
+			t.Fatalf("%s failed decode, got = %d, want = %d", c, n2, len(src))
 		}
-		if !bytes.Equal(src, got[:n]) {
+		if !bytes.Equal(src, got[:n2]) {
 			t.Fatalf("%s failed decode, got = %v, want = %v", c, got, src)
 		}
 	}
 }
 
 func Test_EncodeDecode(t *testing.T) {
-	src := []byte("Hello, 世界！")
-	dst := Encode(src)
-	got, err := Decode(dst)
-	if err != nil {
-		t.Fatalf("failed decode, err = %v", err)
-	}
-	if !bytes.Equal(src, got) {
-		t.Fatalf("failed decode, got = %v, want = %v", got, src)
+	for _, c := range []string{
+		"",
+		"Hello, 世界！",
+	} {
+		src := []byte(c)
+		dst := EncodeToBytes(src)
+		got, err := DecodeBytes(dst)
+		if err != nil {
+			t.Fatalf("failed decode, err = %v", err)
+		}
+		if !bytes.Equal(src, got) {
+			t.Fatalf("failed decode, got = %v, want = %v", got, src)
+		}
 	}
 }
 
 func Test_EncodeDecodeString(t *testing.T) {
-	src := []byte("Hello, 世界！")
-	dstStr := EncodeToString(src)
-	t.Logf("Base62 vs Base64:\n%s\n%s\n", dstStr, base64.StdEncoding.EncodeToString(src))
-	got, _ := DecodeString(dstStr)
-	if !bytes.Equal(src, got) {
-		t.Fatalf("failed decode string, got = %v, want = %v", got, src)
+	for _, c := range []string{
+		"",
+		"Hello, 世界！",
+	} {
+		src := []byte(c)
+		dstStr := EncodeToString(src)
+		t.Logf("Base62 vs Base64:\n%s\n%s\n", dstStr, base64.StdEncoding.EncodeToString(src))
+		got, _ := DecodeString(dstStr)
+		if !bytes.Equal(src, got) {
+			t.Fatalf("failed decode string, got = %v, want = %v", got, src)
+		}
 	}
 }
 
 func Test_EncodeDecode2(t *testing.T) {
 	src := []byte("http://our-uploads.s3.amazonaws.com/file-export/stuff-1427217700-12.csv?AWSAccessKeyId=AAAAIIG7MAQRTHTD7CLP&Expires=1427304113&Signature=VQsRAhgamiw1RVtbrCXOsMu%2BgFo")
-	dst := Encode(src)
-	got, err := Decode(dst)
+	dst := EncodeToBytes(src)
+	got, err := DecodeBytes(dst)
 	if err != nil {
 		t.Fatalf("failed decode, err = %v", err)
 	}
@@ -75,8 +86,8 @@ func Test_EncodeDecode2(t *testing.T) {
 func Test_EncodeDecode_Zeros(t *testing.T) {
 	for i := 0; i < 1000; i++ {
 		src := make([]byte, i)
-		dst := Encode(src)
-		got, err := Decode(dst)
+		dst := EncodeToBytes(src)
+		got, err := DecodeBytes(dst)
 		if err != nil {
 			t.Fatalf("failed decode: err = %v", err)
 		}
@@ -92,8 +103,8 @@ func Test_EncodeDecode_0xFF(t *testing.T) {
 		for i := range src {
 			src[i] = 0xff
 		}
-		dst := Encode(src)
-		got, err := Decode(dst)
+		dst := EncodeToBytes(src)
+		got, err := DecodeBytes(dst)
 		if err != nil {
 			t.Fatalf("failed decode: err = %v", err)
 		}
@@ -107,8 +118,8 @@ func Test_EncodeDecode_RandomBytes(t *testing.T) {
 	for i := 0; i < 1000000; i++ {
 		src := make([]byte, 32+mathrand.Intn(32))
 		_, _ = rand.Read(src)
-		dst := Encode(src)
-		got, err := Decode(dst)
+		dst := EncodeToBytes(src)
+		got, err := DecodeBytes(dst)
 		if err != nil {
 			t.Fatalf("failed decode, err = %v", err)
 		}

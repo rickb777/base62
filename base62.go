@@ -48,18 +48,19 @@ func NewEncoding(encoder string) *Encoding {
 var StdEncoding = NewEncoding(encodeStd)
 
 // Encode encodes src using the encoding enc.
-func (enc *Encoding) Encode(src []byte) []byte {
+func (enc *Encoding) Encode(dest, src []byte) int {
 	if len(src) == 0 {
-		return []byte{}
+		return 0
 	}
 	encoder := newEncoder(src)
-	return encoder.encode(enc.encode[:])
+	return encoder.encode(dest, enc.encode[:])
 }
 
 // EncodeToString returns the encoding of src.
 func (enc *Encoding) EncodeToString(src []byte) string {
-	ret := enc.Encode(src)
-	return b2s(ret)
+	buf := allocEncodeBuffer(len(src))
+	n := enc.Encode(buf, src)
+	return b2s(buf[:n])
 }
 
 type encoder struct {
@@ -107,18 +108,25 @@ func (enc *encoder) next() (byte, bool) {
 	return b, pos > 0
 }
 
-func (enc *encoder) encode(encTable []byte) []byte {
-	ret := make([]byte, 0, len(enc.b)*8/5+1)
+func (enc *encoder) encode(ret, encTable []byte) int {
+	i := 0
 	x, hasMore := enc.next()
 	for {
-		ret = append(ret, encTable[x])
+		ret[i] = encTable[x]
+		i++
 		if !hasMore {
 			break
 		}
 		x, hasMore = enc.next()
 	}
-	return ret
+	return i
 }
+
+func allocEncodeBuffer(srcLen int) []byte {
+	return make([]byte, srcLen*8/5+2)
+}
+
+//-------------------------------------------------------------------------------------------------
 
 type CorruptInputError int64
 
@@ -126,6 +134,9 @@ func (e CorruptInputError) Error() string {
 	return "illegal base62 data at input byte " + strconv.FormatInt(int64(e), 10)
 }
 
+//-------------------------------------------------------------------------------------------------
+
+// Decode decodes src using the encoding enc.
 func (enc *Encoding) Decode(dest, src []byte) (int, error) {
 	if len(src) == 0 {
 		return 0, nil
@@ -137,15 +148,16 @@ func (enc *Encoding) Decode(dest, src []byte) (int, error) {
 	return n, err
 }
 
-func (enc *Encoding) DecodeString(src string) ([]byte, error) {
-	return enc.decodeBytes(s2b(src))
+// DecodeString returns the bytes represented by the base62 string s.
+func (enc *Encoding) DecodeString(s string) ([]byte, error) {
+	return enc.decodeBytes(s2b(s))
 }
 
 func (enc *Encoding) decodeBytes(src []byte) ([]byte, error) {
 	if len(src) == 0 {
 		return []byte{}, nil
 	}
-	buf := allocBuffer(len(src))
+	buf := allocDecodeBuffer(len(src))
 	n, err := decode(buf, src, enc.decodeMap[:])
 	return buf[len(buf)-n:], err
 }
@@ -186,24 +198,30 @@ func decode(ret, src, decTable []byte) (n int, err error) {
 	return n, nil
 }
 
-func allocBuffer(srcLen int) []byte {
+func allocDecodeBuffer(srcLen int) []byte {
 	return make([]byte, srcLen*6/8+1)
 }
 
-// Encode encodes src using StdEncoding.
-func Encode(src []byte) []byte {
-	return StdEncoding.Encode(src)
+//-------------------------------------------------------------------------------------------------
+
+// EncodeToBytes encodes src using StdEncoding.
+func EncodeToBytes(src []byte) []byte {
+	buf := allocEncodeBuffer(len(src))
+	n := StdEncoding.Encode(buf, src)
+	return buf[:n]
 }
 
-// EncodeToString returns the encoding of src.
+// EncodeToString encodes src using StdEncoding.
 func EncodeToString(src []byte) string {
 	return StdEncoding.EncodeToString(src)
 }
 
-func Decode(src []byte) ([]byte, error) {
+// Decode decodes src using StdEncoding.
+func DecodeBytes(src []byte) ([]byte, error) {
 	return StdEncoding.decodeBytes(src)
 }
 
+// Decode decodes src using StdEncoding.
 func DecodeString(src string) ([]byte, error) {
 	return StdEncoding.DecodeString(src)
 }

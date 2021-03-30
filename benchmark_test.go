@@ -18,7 +18,7 @@ func init() {
 	if _, err := rand.Read(testRandBytes); err != nil {
 		panic(err)
 	}
-	testEncodedBytes = Encode(testRandBytes)
+	testEncodedBytes = EncodeToBytes(testRandBytes)
 	testEncodedBase64 = base64.RawStdEncoding.EncodeToString(testRandBytes)
 }
 
@@ -37,13 +37,13 @@ func encodeWithBigInt(b []byte) []byte {
 
 func Benchmark_Encode(bb *testing.B) {
 	for i := 0; i < bb.N; i++ {
-		_ = Encode(testRandBytes)
+		_ = EncodeToBytes(testRandBytes)
 	}
 }
 
 func Benchmark_Decode(bb *testing.B) {
 	for i := 0; i < bb.N; i++ {
-		_, _ = Decode(testEncodedBytes)
+		_, _ = DecodeBytes(testEncodedBytes)
 	}
 }
 
