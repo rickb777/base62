@@ -3,6 +3,7 @@ package base62
 import (
 	"bytes"
 	"crypto/rand"
+	"encoding/base64"
 	mathrand "math/rand"
 	"strings"
 	"testing"
@@ -20,6 +21,26 @@ func Test_EncodeDecode(t *testing.T) {
 	}
 
 	dstStr := EncodeToString(src)
+	t.Logf("Base62 vs Base64:\n%s\n%s\n", dstStr, base64.StdEncoding.EncodeToString(src))
+	got, _ = DecodeString(dstStr)
+	if !bytes.Equal(src, got) {
+		t.Fatalf("failed decode string, got = %v, want = %v", got, src)
+	}
+}
+
+func Test_EncodeDecode2(t *testing.T) {
+	src := []byte("http://our-uploads.s3.amazonaws.com/file-export/stuff-1427217700-12.csv?AWSAccessKeyId=AAAAIIG7MAQRTHTD7CLP&Expires=1427304113&Signature=VQsRAhgamiw1RVtbrCXOsMu%2BgFo")
+	dst := Encode(src)
+	got, err := Decode(dst)
+	if err != nil {
+		t.Fatalf("failed decode, err = %v", err)
+	}
+	if !bytes.Equal(src, got) {
+		t.Fatalf("failed decode, got = %v, want = %v", got, src)
+	}
+
+	dstStr := EncodeToString(src)
+	t.Logf("Base62 vs Base64:\n%s\n%s\n", dstStr, base64.StdEncoding.EncodeToString(src))
 	got, _ = DecodeString(dstStr)
 	if !bytes.Equal(src, got) {
 		t.Fatalf("failed decode string, got = %v, want = %v", got, src)
