@@ -53,25 +53,25 @@ func (enc *Encoding) ParseUint(src []byte) (uint64, error) {
 }
 
 func FormatInt(num int64) []byte {
-	return stdEncoding.FormatInt(num)
+	return StdEncoding.FormatInt(num)
 }
 
 func FormatUint(num uint64) []byte {
-	return stdEncoding.FormatUint(num)
+	return StdEncoding.FormatUint(num)
 }
 
 func AppendInt(dst []byte, num int64) []byte {
-	return stdEncoding.AppendInt(dst, num)
+	return StdEncoding.AppendInt(dst, num)
 }
 
 func AppendUint(dst []byte, num uint64) []byte {
-	return stdEncoding.AppendUint(dst, num)
+	return StdEncoding.AppendUint(dst, num)
 }
 
 func ParseInt(src []byte) (int64, error) {
-	return stdEncoding.ParseInt(src)
+	return StdEncoding.ParseInt(src)
 }
 
 func ParseUint(src []byte) (uint64, error) {
-	return stdEncoding.ParseUint(src)
+	return StdEncoding.ParseUint(src)
 }

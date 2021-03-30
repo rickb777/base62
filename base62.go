@@ -15,11 +15,14 @@ const (
 
 const encodeStd = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 
+// An Encoding is a radix 62 encoding/decoding scheme, defined by a 62-character alphabet.
 type Encoding struct {
 	encode    [base]byte
 	decodeMap [256]byte
 }
 
+// NewEncoding returns a new padded Encoding defined by the given alphabet. It will
+// panic if the alphabet is not 62 bytes long.
 func NewEncoding(encoder string) *Encoding {
 	if len(encoder) != base {
 		panic("encoding alphabet is not 62-bytes long")
@@ -41,8 +44,10 @@ func NewEncoding(encoder string) *Encoding {
 	return e
 }
 
-var stdEncoding = NewEncoding(encodeStd)
+// StdEncoding is an encoding/decoding scheme consisting of [A-Za-z0-9].
+var StdEncoding = NewEncoding(encodeStd)
 
+// Encode encodes src using the encoding enc.
 func (enc *Encoding) Encode(src []byte) []byte {
 	if len(src) == 0 {
 		return []byte{}
@@ -51,6 +56,7 @@ func (enc *Encoding) Encode(src []byte) []byte {
 	return encoder.encode(enc.encode[:])
 }
 
+// EncodeToString returns the encoding of src.
 func (enc *Encoding) EncodeToString(src []byte) string {
 	ret := enc.Encode(src)
 	return b2s(ret)
@@ -170,20 +176,22 @@ func (dec decoder) decode(decTable []byte) ([]byte, error) {
 	return ret[idx:], nil
 }
 
+// Encode encodes src using StdEncoding.
 func Encode(src []byte) []byte {
-	return stdEncoding.Encode(src)
+	return StdEncoding.Encode(src)
 }
 
+// EncodeToString returns the encoding of src.
 func EncodeToString(src []byte) string {
-	return stdEncoding.EncodeToString(src)
+	return StdEncoding.EncodeToString(src)
 }
 
 func Decode(src []byte) ([]byte, error) {
-	return stdEncoding.Decode(src)
+	return StdEncoding.Decode(src)
 }
 
 func DecodeString(src string) ([]byte, error) {
-	return stdEncoding.DecodeString(src)
+	return StdEncoding.DecodeString(src)
 }
 
 func b2s(b []byte) string {
