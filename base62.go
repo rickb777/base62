@@ -126,32 +126,40 @@ func (e CorruptInputError) Error() string {
 	return "illegal base62 data at input byte " + strconv.FormatInt(int64(e), 10)
 }
 
-func (enc *Encoding) Decode(src []byte) ([]byte, error) {
+func (enc *Encoding) Decode(dest, src []byte) (int, error) {
 	if len(src) == 0 {
-		return []byte{}, nil
+		return 0, nil
 	}
-	dec := decoder(src)
-	return dec.decode(enc.decodeMap[:])
+	n, err := decode(dest, src, enc.decodeMap[:])
+	if err == nil && n < len(dest) {
+		copy(dest, dest[len(dest)-n:])
+	}
+	return n, err
 }
 
 func (enc *Encoding) DecodeString(src string) ([]byte, error) {
-	b := s2b(src)
-	return enc.Decode(b)
+	return enc.decodeBytes(s2b(src))
 }
 
-type decoder []byte
+func (enc *Encoding) decodeBytes(src []byte) ([]byte, error) {
+	if len(src) == 0 {
+		return []byte{}, nil
+	}
+	buf := allocBuffer(len(src))
+	n, err := decode(buf, src, enc.decodeMap[:])
+	return buf[len(buf)-n:], err
+}
 
-func (dec decoder) decode(decTable []byte) ([]byte, error) {
-	ret := make([]byte, len(dec)*6/8+1)
+func decode(ret, src, decTable []byte) (n int, err error) {
 	idx := len(ret)
 	pos := byte(0)
 	b := 0
-	for i, c := range dec {
+	for i, c := range src {
 		x := decTable[c]
 		if x == 0xFF {
-			return nil, CorruptInputError(i)
+			return 0, CorruptInputError(i)
 		}
-		if i == len(dec)-1 {
+		if i == len(src)-1 {
 			b |= int(x) << pos
 			pos += byte(bits.Len8(x))
 		} else if x&compactMask == compactMask {
@@ -164,6 +172,7 @@ func (dec decoder) decode(decTable []byte) ([]byte, error) {
 		if pos >= 8 {
 			idx--
 			ret[idx] = byte(b)
+			n++
 			pos %= 8
 			b >>= 8
 		}
@@ -171,9 +180,14 @@ func (dec decoder) decode(decTable []byte) ([]byte, error) {
 	if pos > 0 {
 		idx--
 		ret[idx] = byte(b)
+		n++
 	}
 
-	return ret[idx:], nil
+	return n, nil
+}
+
+func allocBuffer(srcLen int) []byte {
+	return make([]byte, srcLen*6/8+1)
 }
 
 // Encode encodes src using StdEncoding.
@@ -187,7 +201,7 @@ func EncodeToString(src []byte) string {
 }
 
 func Decode(src []byte) ([]byte, error) {
-	return StdEncoding.Decode(src)
+	return StdEncoding.decodeBytes(src)
 }
 
 func DecodeString(src string) ([]byte, error) {

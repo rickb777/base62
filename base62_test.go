@@ -9,6 +9,28 @@ import (
 	"testing"
 )
 
+func Test_MethodEncodeDecode(t *testing.T) {
+	for c, exp := range map[string]int{
+		"":           0,
+		"Hello, 世界！": 16,
+	} {
+		src := []byte(c)
+		dst := StdEncoding.Encode(src)
+
+		got := make([]byte, len(src)*2)
+		n, err := StdEncoding.Decode(got, dst)
+		if err != nil {
+			t.Fatalf("%s failed decode, err = %v", c, err)
+		}
+		if n != exp {
+			t.Fatalf("%s failed decode, got = %d, want = %d", c, n, exp)
+		}
+		if !bytes.Equal(src, got[:n]) {
+			t.Fatalf("%s failed decode, got = %v, want = %v", c, got, src)
+		}
+	}
+}
+
 func Test_EncodeDecode(t *testing.T) {
 	src := []byte("Hello, 世界！")
 	dst := Encode(src)
@@ -19,10 +41,13 @@ func Test_EncodeDecode(t *testing.T) {
 	if !bytes.Equal(src, got) {
 		t.Fatalf("failed decode, got = %v, want = %v", got, src)
 	}
+}
 
+func Test_EncodeDecodeString(t *testing.T) {
+	src := []byte("Hello, 世界！")
 	dstStr := EncodeToString(src)
 	t.Logf("Base62 vs Base64:\n%s\n%s\n", dstStr, base64.StdEncoding.EncodeToString(src))
-	got, _ = DecodeString(dstStr)
+	got, _ := DecodeString(dstStr)
 	if !bytes.Equal(src, got) {
 		t.Fatalf("failed decode string, got = %v, want = %v", got, src)
 	}
@@ -155,7 +180,7 @@ func Test_Decode_CorruptInputError(t *testing.T) {
 	for i := range src {
 		src[i] = byte(i)
 	}
-	_, err := StdEncoding.Decode(src)
+	_, err := StdEncoding.Decode(make([]byte, 512), src)
 	if err == nil || !strings.Contains(err.Error(), "illegal base62 data at input byte") {
 		t.Fatal("decoding invalid data did not return CorruptInputError")
 	}
